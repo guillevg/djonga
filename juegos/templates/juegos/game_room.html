@@ -55,7 +55,7 @@
   // SOCKET SETUP
   const gameSlug = JSON.parse(document.getElementById('slug').textContent);
   const idPartida = JSON.parse(document.getElementById('id_partida').textContent);
-  const socketURL = 'ws://' + window.location.host + '/ws/juegos/' + gameSlug + '/' + idPartida + '/';
+  const socketURL = 'wss://' + window.location.host + '/ws/juegos/' + gameSlug + '/' + idPartida + '/';
 
   let activeGame = new Game();
   let gameVue = new Vue({

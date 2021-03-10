@@ -30,7 +30,7 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js" charset="utf-8"></script>
 <script>
 const gameSlug = JSON.parse(document.getElementById('slug').textContent);
-const socketURL = 'ws://' + window.location.host + '/ws/juegos/' + gameSlug + '/';
+const socketURL = 'wss://' + window.location.host + '/ws/juegos/' + gameSlug + '/';
 let waitingGamesView = new Vue({
   el: '#waiting-games-view',
   delimiters: ['${', '}'],
