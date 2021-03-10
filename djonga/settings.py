@@ -26,10 +26,9 @@ SECRET_KEY = 'y!k(gcc7=h+hgd-wi^+_=ezd11hlgfpdmdyf1f570+j&tj))-&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 PRODUCTION = False
+ALLOWED_HOSTS = ['localhost']
 if PRODUCTION:
-    ALLOWED_HOSTS = ['dodecaedro.xyz', 'www.dodecaedro.xyz', 'juegos.dodecaedro.xyz', '104.248.95.198']
-else:
-    ALLOWED_HOSTS = ['127.0.0.1']
+    ALLOWED_HOSTS += ['dodecaedro.xyz', 'www.dodecaedro.xyz', 'juegos.dodecaedro.xyz', '104.248.95.198']
 
 
 # Application definition
