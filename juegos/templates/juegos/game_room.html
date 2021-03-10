@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ juego.nombre }} #{{ id_partida }}</title>
+  <link rel="stylesheet" href="{% get_static_prefix %}css/{{ slug }}/master.css" />
+  <!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" /-->
+</head>
+<body>
+
+{{ slug|json_script:"slug" }}
+{{ id_partida|json_script:"id_partida" }}
+
+{% comment %}
+<!--
+<div id="divBoard" style="position:absolute; top:10px; left:10px;">
+  <canvas id="canvasBoard" width="500" height="500" style="background-color:#fff"></canvas>
+</div>
+<textarea id="chat-log" cols="100" rows="20" style="position:absolute; top:520px; left:50px;"></textarea><br>
+
+
+<script src="{% get_static_prefix %}{{ juego.script }}"></script>
+-->
+{% endcomment %}
+
+
+<div id="game-view">
+  <div id="game-view-info" v-bind:class="{ inprogress: inProgress, aborted: aborted }">
+    <h1 v-if="waitingForPlayers"> WAITING FOR OPPONENT </h1>
+    <h1 v-else-if="inProgress"> ${ currentTurn } PLAYS </h1>
+    <h1 v-else-if="winner"> ${ winner } WINS! </h1>
+    <h1 v-else> TIE! </h1>
+  </div>
+  <div id="game-view-board">
+    <template v-if="waitingForPlayers"></template>
+    <template v-else>
+      <div class="game-view-square"
+         v-for="(square, i) in squares"
+         v-on:click="sendMove(i)"
+         v-bind:class="{ highlighted: square.isHighlighted }"
+         class="game-view-square"
+      >
+        <p>${ square.value }</p>
+      </div>
+    </template>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js" charset="utf-8"></script>
+<script src="{% get_static_prefix %}js/{{ slug }}/Square.js"></script>
+<script src="{% get_static_prefix %}js/{{ slug }}/Game.js"></script>
+<script type="text/javascript">
+  // SOCKET SETUP
+  const gameSlug = JSON.parse(document.getElementById('slug').textContent);
+  const idPartida = JSON.parse(document.getElementById('id_partida').textContent);
+  const socketURL = 'ws://' + window.location.host + '/ws/juegos/' + gameSlug + '/' + idPartida + '/';
+
+  let activeGame = new Game();
+  let gameVue = new Vue({
+    el: '#game-view',
+    delimiters: ['${', '}'],
+    data: activeGame,
+    methods: {
+      sendMove: function(i) {
+        this.socket.send(JSON.stringify( {
+          'type': 'game.move',
+          'move': i,
+          'tablero': activeGame.moveList,
+          'player': activeGame.me,
+         } ));
+      },
+      endGame: function(i) {
+        this.socket.send(JSON.stringify( {
+          'type': 'game.end',
+          'winner': activeGame.winner,
+         } ));
+      },
+    },
+    created: function() {
+      let vm = this;
+      console.log("Starting connection to WebSocket");
+      this.socket = new WebSocket(socketURL);
+
+      this.socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        switch (data.type) {
+          case 'game.me':
+            console.log('Me toca el símbolo ' + data.me)
+            activeGame.me = data.me;
+            break;
+          case 'game.start':
+            console.log('¡Empezamos!');
+            activeGame.waitingForPlayers = false;
+            activeGame.inProgress = true;
+            break;
+          case 'game.end':
+            console.log('¡Fin del juego!');
+            activeGame.makeMove(parseInt(data.move));
+            activeGame.moveList = data.tablero;
+            break;
+          case 'game.abort':
+            console.log(data.message);
+            activeGame.inProgress = false;
+            activeGame.aborted = true;
+            break;
+          case 'game.move':
+            console.log('Player', data.player, 'plays', data.move);
+            activeGame.makeMove(parseInt(data.move));
+            activeGame.moveList = data.tablero;
+            break;
+          case 'game.movelist':
+            for (let i = 0; i < data.game_moves.length; i++) {
+              activeGame.makeMove(data.game_moves[i]);
+            };
+            break;
+          case 'chat.message':
+            console.log(data.message);
+            break;
+        }
+      };
+
+      this.socket.onclose = function(e) { console.error('Chat socket closed unexpectedly'); };
+    }
+  });
+</script>
+
+</body>
+</html>

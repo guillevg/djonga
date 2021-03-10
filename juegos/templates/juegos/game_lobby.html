@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ juego.nombre }}</title>
+</head>
+<body>
+{{ juego.slug|json_script:"slug" }}
+<h1>{{ juego.nombre }}</h1>
+
+<div>
+  <p>
+    <a href="{% url 'juegos:nueva_partida' juego.slug %}">Nueva partida</a>
+  </p>
+
+
+  <div id="waiting-games-view">
+    <h3>Partidas en espera (${ userCount } usuarios conectados)</h3>
+    <p v-for="(game_id, i) in waitingGames">
+      <a :href="game_id">${ game_id }</a>
+    </p>
+  </div>
+
+  <h3>Reglas del juego</h3>
+  <p>
+    {{ juego.rules }}
+  </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js" charset="utf-8"></script>
+<script>
+const gameSlug = JSON.parse(document.getElementById('slug').textContent);
+const socketURL = 'ws://' + window.location.host + '/ws/juegos/' + gameSlug + '/';
+let waitingGamesView = new Vue({
+  el: '#waiting-games-view',
+  delimiters: ['${', '}'],
+  data: function() {
+    return {
+      waitingGames: [],
+      userCount: 0,
+    }
+  },
+  methods: {
+    addGameToList: function(game_id) {
+      this.waitingGames.push(game_id);
+    },
+  },
+  created: function() {
+    let vm = this;
+    console.log("Starting connection to WebSocket");
+    this.socket = new WebSocket(socketURL);
+    this.socket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      console.log('MENSAJE', data);
+      switch (data.type) {
+        case 'lobby.newuser':
+          console.log('New user! Total users =', data.usercount);
+          vm.userCount = data.usercount;
+          break;
+        case 'lobby.userquit':
+          console.log('User left the lobby! Total users =', data.usercount);
+          vm.userCount = data.usercount;
+          break;
+        case 'lobby.newgame':
+          console.log('New game in the lobby! ID = #', data.game_id);
+          console.log('Games in lobby:', data.waiting_games_list);
+          vm.waitingGames = data.waiting_games_list;
+          break;
+        case 'lobby.gamestart':
+          console.log('Game #', data.game_id, 'has started!');
+          console.log('Games in lobby:', data.waiting_games_list);
+          vm.waitingGames = data.waiting_games_list;
+          break;
+        case 'lobby.gameabort':
+          console.log('Game #', data.game_id, 'has been aborted!');
+          console.log('Games in lobby:', data.waiting_games_list);
+          vm.waitingGames = data.waiting_games_list;
+          break;
+        case 'lobby.listupdate':
+          console.log('Here\'s the list of waiting games:', data.waiting_games_list);
+          vm.waitingGames = data.waiting_games_list;
+          break;
+      }
+    }
+  }
+});
+
+</script>
+
+</body>
+</html>

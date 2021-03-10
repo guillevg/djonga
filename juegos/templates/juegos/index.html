@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <body>
+  {% for juego in juegos %}
+    <p><a href="{% url 'juegos:lobby' juego.slug %}">{{ juego.nombre }}</a></p>
+  {% endfor %}
+  </body>
+</html>
